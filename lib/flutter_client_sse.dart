@@ -16,14 +16,14 @@ class SSEClient {
   static void _onConnected() {
     isConnected = true;
     try{
-      onConnected?.call();
+      SSEClient.onConnected?.call();
     }catch(e){}
   }
   static void _onDisconnected() {
     if(isConnected){
       isConnected = false;
       try{
-        onDisconnected?.call();
+        SSEClient.onDisconnected?.call();
       }catch(e){}
     }
   }
@@ -48,6 +48,8 @@ class SSEClient {
         header: header,
         body: body,
         oldStreamController: streamController,
+        onConnected: SSEClient.onConnected,
+        onDisconnected: SSEClient.onDisconnected,
       );
     });
   }
