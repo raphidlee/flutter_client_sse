@@ -9,7 +9,24 @@ part 'sse_event_model.dart';
 /// A client for subscribing to Server-Sent Events (SSE).
 class SSEClient {
   static http.Client _client = new http.Client();
+  static Function? onConnected;
+  static Function? onDisconnected;
+  static bool isConnected = false;
 
+  static void _onConnected() {
+    isConnected = true;
+    try{
+      onConnected?.call();
+    }catch(e){}
+  }
+  static void _onDisconnected() {
+    if(isConnected){
+      isConnected = false;
+      try{
+        onDisconnected?.call();
+      }catch(e){}
+    }
+  }
   /// Retry the SSE connection after a delay.
   ///
   /// [method] is the request method (GET or POST).
@@ -48,11 +65,17 @@ class SSEClient {
       required String url,
       required Map<String, String> header,
       StreamController<SSEModel>? oldStreamController,
-      Map<String, dynamic>? body}) {
+      Map<String, dynamic>? body,
+      Function? onConnected,
+      Function? onDisconnected}) {
     StreamController<SSEModel> streamController = StreamController();
     if (oldStreamController != null) {
       streamController = oldStreamController;
     }
+
+    onConnected = onConnected;
+    onDisconnected = onDisconnected;
+
     var lineRegex = RegExp(r'^([^:]*)(?::)?(?: )?(.*)?$');
     var currentSSEModel = SSEModel(data: '', id: '', event: '');
     print("--SUBSCRIBING TO SSE---");
@@ -75,6 +98,8 @@ class SSEClient {
         }
 
         Future<http.StreamedResponse> response = _client.send(request);
+
+        _onConnected();
 
         /// Listening to the response as a stream
         response.asStream().listen((data) {
@@ -121,6 +146,9 @@ class SSEClient {
                   default:
                     print('---ERROR---');
                     print(dataLine);
+
+                    _onDisconnected();
+
                     _retryConnection(
                       method: method,
                       url: url,
@@ -132,6 +160,7 @@ class SSEClient {
               onError: (e, s) {
                 print('---ERROR---');
                 print(e);
+                _onDisconnected();
                 _retryConnection(
                   method: method,
                   url: url,
@@ -144,6 +173,7 @@ class SSEClient {
         }, onError: (e, s) {
           print('---ERROR---');
           print(e);
+          _onDisconnected();
           _retryConnection(
             method: method,
             url: url,
@@ -155,6 +185,7 @@ class SSEClient {
       } catch (e) {
         print('---ERROR---');
         print(e);
+        _onDisconnected();
         _retryConnection(
           method: method,
           url: url,
