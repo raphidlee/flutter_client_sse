@@ -75,8 +75,8 @@ class SSEClient {
       streamController = oldStreamController;
     }
 
-    onConnected = onConnected;
-    onDisconnected = onDisconnected;
+    SSEClient.onConnected = onConnected;
+    SSEClient.onDisconnected = onDisconnected;
 
     var lineRegex = RegExp(r'^([^:]*)(?::)?(?: )?(.*)?$');
     var currentSSEModel = SSEModel(data: '', id: '', event: '');
